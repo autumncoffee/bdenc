@@ -20,12 +20,13 @@
 
 #ifdef RELEASE_FILESYSTEM
 #include <filesystem>
+
+namespace stdfs = std::filesystem;
+
 #else
 #include <experimental/filesystem>
 
-namespace std {
-    namespace filesystem = std::experimental::filesystem;
-}
+namespace stdfs = std::experimental::filesystem;
 #endif
 
 enum TMode {
@@ -186,13 +187,13 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    const std::filesystem::path wd(workdirPath);
+    const stdfs::path wd(workdirPath);
     const auto ivPath = wd / ".iv";
     const auto keyPath = wd / ".key";
 
     if (
-        !std::filesystem::exists(ivPath)
-        || !std::filesystem::exists(keyPath)
+        !stdfs::exists(ivPath)
+        || !stdfs::exists(keyPath)
     ) {
         if (mode == MODE_DECRYPT) {
             std::cerr << "Key and/or iv absent" << std::endl;
@@ -245,7 +246,7 @@ int main(int argc, char** argv) {
     uint64_t offset(0);
     const auto offsetPath = wd / (modeName + "_offset");
 
-    if (!std::filesystem::exists(offsetPath)) {
+    if (!stdfs::exists(offsetPath)) {
         uint64_t tmp(NAC::hton(offset));
 
         if (!CreateFile(offsetPath.string(), sizeof(tmp), (const char*)&tmp)) {
@@ -270,7 +271,7 @@ int main(int argc, char** argv) {
 
     const auto sparsePath = wd / (((mode == MODE_ENCRYPT) ? modeName : inverseModeName) + "_sparse");
 
-    if (!std::filesystem::exists(sparsePath)) {
+    if (!stdfs::exists(sparsePath)) {
         if (!CreateFile(sparsePath.string(), 0, nullptr)) {
             return 1;
         }
@@ -279,7 +280,7 @@ int main(int argc, char** argv) {
     NAC::TFile sparseFile(sparsePath.string(), ((mode == MODE_ENCRYPT) ? NAC::TFile::ACCESS_WRONLY : NAC::TFile::ACCESS_RDONLY));
     size_t sparseOffset(0);
 
-    if (!sparseFile && ((mode == MODE_ENCRYPT) || (std::filesystem::exists(sparsePath) && !std::filesystem::is_empty(sparsePath)))) {
+    if (!sparseFile && ((mode == MODE_ENCRYPT) || (stdfs::exists(sparsePath) && !stdfs::is_empty(sparsePath)))) {
         std::cerr << "Can't load sparse file" << std::endl;
         return 1;
     }
@@ -309,7 +310,7 @@ int main(int argc, char** argv) {
         const auto tmpPath = wd / (modeName + "_chunk-" + std::to_string(offset));
         bool allZeroes(false);
 
-        if (std::filesystem::exists(tmpPath)) {
+        if (stdfs::exists(tmpPath)) {
             NAC::TFile tmp(tmpPath.string());
 
             if (!tmp || (tmp.Size() != chunkSize)) {
