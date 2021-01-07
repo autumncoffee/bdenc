@@ -38,7 +38,9 @@ enum TMode {
 
 template<typename... TArgs>
 bool CreateFile(const std::string& path, TArgs&&... args) {
-    NAC::TFile file(path, NAC::TFile::ACCESS_CREATE);
+    const std::string tmpPath(path + ".tmp.XXXXXXXXXX");
+
+    NAC::TFile file(tmpPath, NAC::TFile::ACCESS_TMP);
 
     if (!file) {
         std::cerr << "Can't create " << path << std::endl;
@@ -49,6 +51,12 @@ bool CreateFile(const std::string& path, TArgs&&... args) {
     file.FSync();
 
     if (!file) {
+        std::cerr << "Can't create " << path << std::endl;
+        return false;
+    }
+
+    if (rename(file.Path().c_str(), path.c_str()) != 0) {
+        perror("rename");
         std::cerr << "Can't create " << path << std::endl;
         return false;
     }
